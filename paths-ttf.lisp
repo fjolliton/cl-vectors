@@ -19,9 +19,9 @@
 (in-package #:net.tuxee.paths-ttf)
 
 (defun paths-from-glyph (glyph &key (offset (make-point 0 0)) (scale-x 1.0) (scale-y 1.0))
-  (flet ((point (p) (paths::p+ (make-point (* (x p) scale-x)
-                                           (* (y p) scale-y))
-                               offset)))
+  (flet ((point (p) (p+ (make-point (* (x p) scale-x)
+                                    (* (y p) scale-y))
+                        offset)))
     (let (result)
       (do-contours (contour glyph)
         (let ((path (create-path :polygon))
