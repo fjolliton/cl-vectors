@@ -8,4 +8,14 @@ The project homepage can be found at the following URL:
 
   http://projects.tuxee.net/cl-vectors/
 
-(..to be completed..)
+Changes
+-------
+
+ version 0.1.1
+
+  - fixed cl-aa.asd system definition ("cl-aa" -> "aa").
+    Thanks to Ivan Toshkov.
+
+ version 0.1
+
+  - Initial release.
