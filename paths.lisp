@@ -1011,7 +1011,7 @@ the specified RADIUS."
           radius-y (abs radius-y))
     (when (= radius radius-y)
       (setf x-axis-rotation 0.0))
-    (when (and (plusp cx) (plusp cy))
+    (when (and (plusp radius) (plusp radius-y))
       (let* ((center (make-point cx cy))
              (p (point-rotate (make-point radius 0) x-axis-rotation))
              (left (p+ center p))
