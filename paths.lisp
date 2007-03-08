@@ -1072,8 +1072,9 @@ the specified RADIUS."
 
 (defmacro define-for-multiple-paths (name-multiple name-single &optional documentation)
   "Define a new function named by NAME-MULTIPLE which accepts
-multiple paths as input from a function accepting a single path
-and producing a list of path named by NAME-SINGLE."
+either a single path or a list of paths as input from a function
+named by NAME-SINGLE accepting only a single path and producing a
+list of paths."
   `(defun ,name-multiple (paths &rest args)
      ,@(when documentation (list documentation))
      (loop for path in (if (listp paths) paths (list paths))
