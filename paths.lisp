@@ -1016,7 +1016,6 @@ the specified RADIUS."
              (p (point-rotate (make-point radius 0) x-axis-rotation))
              (left (p+ center p))
              (right (p- center p)))
-        (path-reset path right)
         (path-extend path (make-arc radius radius-y :x-axis-rotation x-axis-rotation) left)
         (path-extend path (make-arc radius radius-y :x-axis-rotation x-axis-rotation) right)))
     path))
