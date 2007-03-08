@@ -1403,12 +1403,9 @@ reached."
                           (let ((missing (- size current-length))
                                 (available (- length pos)))
                             (when (> missing available)
-                              ;; FIXME: large-arc-flag must be
-                              ;; computed accordingly to the new ends
-                              ;; of the arc!
                               (extend (make-arc nrx nry
                                                 :x-axis-rotation x-axis-rotation
-                                                :large-arc-flag nil
+                                                :large-arc-flag (>= (/ available nrx) pi)
                                                 :sweep-flag sweep-flag)
                                       knot
                                       available)
@@ -1421,12 +1418,9 @@ reached."
                                                              (+ start-angle (/ pos nrx))
                                                              (- start-angle (/ pos nrx)))))
                                         rc)))
-                              ;; FIXME: large-arc-flag must be
-                              ;; computed accordingly to the new ends
-                              ;; of the arc!
                               (extend (make-arc nrx nry
                                                 :x-axis-rotation x-axis-rotation
-                                                :large-arc-flag nil
+                                                :large-arc-flag (>= (/ missing nrx) pi)
                                                 :sweep-flag sweep-flag)
                                       end
                                       missing)
