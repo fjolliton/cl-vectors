@@ -11,6 +11,19 @@ The project homepage can be found at the following URL:
 Changes
 -------
 
+ version 0.1.2
+
+  - fixed make-circle-path. A bug prevented circle creation with non
+    positive coordinates. Also, the circle path doesn't include the
+    zero-length straight line anymore (it was here for historical
+    reason.)
+
+  - fixed dash transformation when processing arcs. The resultings
+    chunk of arcs were not correctly specified for the :large-arc-flag
+    attribute (it was false all the time.)
+
+  - vectors:update-state now accept either a path or a list of paths.
+
  version 0.1.1
 
   - fixed cl-aa.asd system definition ("cl-aa" -> "aa").
