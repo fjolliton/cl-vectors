@@ -319,79 +319,106 @@ knot is the last on the path or if the path is empty."))
 ;;; Iterate distinct
 
 ;;; This iterator filter out identical knots. That is, the knots with
-;;; the same positions, with any interpolation.
+;;; the same positions, with any interpolation. (All interpolations
+;;; currently implemented are empty when knot around them are not
+;;; distinct.)
 
-;;; Note about end marker: Consider the input path with knots A, A, B,
-;;; C, C, A. The last knot A is marked as the last knot on the
-;;; path. But the "distinct" filter will keep only the knot between
-;;; brackets: A, [A], [B], C, [C], A (the last of each series of
-;;; identical knots.) The resulting sequence is thus: A, B, C. And C
-;;; is the last knot in this case.
+;;; When cyclic-p is true, the first knot of the iterator is the first
+;;; knot distinct from the first knot of the reference iterator.
 
-(defstruct filter-distinct-state
-  iterator current next cyclic-p)
+;;; When cyclic-p is false, the first knot of the iterator if the
+;;; first knot of the reference iterator, and if the path ends with a
+;;; knot which is not distinct from the first, it is kept.
+
+(defclass filter-distinct-state ()
+  ((iterator :initarg :iterator)
+   (cyclic-p :initarg :cyclic-p)
+   (fixed :initarg :fixed)
+   (next :initarg :next)
+   (next-is-end-p)))
 
 (defun filter-distinct (iterator &optional (preserve-cyclic-end-p nil))
-  (make-filter-distinct-state :iterator iterator
-                              :current nil :next nil
-                              :cyclic-p (not preserve-cyclic-end-p)))
+  (make-instance 'filter-distinct-state
+                 :iterator iterator
+                 :cyclic-p (not preserve-cyclic-end-p)
+                 :fixed nil
+                 :next nil))
 
 (defmethod path-iterator-reset ((iterator filter-distinct-state))
-  (path-iterator-reset (filter-distinct-state-iterator iterator))
-  (setf (filter-distinct-state-current iterator) nil
-        (filter-distinct-state-next iterator) nil))
+  (with-slots ((sub iterator) next next-is-end-p) iterator
+    (path-iterator-reset sub)
+    (setf next nil
+          next-is-end-p nil)))
 
 (defmethod path-iterator-next ((iterator filter-distinct-state))
-  (let ((sub (filter-distinct-state-iterator iterator))
-        (current (filter-distinct-state-current iterator))
-        (next (filter-distinct-state-next iterator))
-        (cyclic-p (filter-distinct-state-cyclic-p iterator))
-        result)
-    ;; FIXME: Both LOOP can be factorized
-    ;;
-    ;; When we start, we have 2 things:
-    ;; - the state to return, possibly modified below for end-p (aka current)
-    ;; - the state that followed current (aka next)
-    (unless current
-      ;; Take the first knot
-      (setf current (multiple-value-list (path-iterator-next sub)))
-      (when (or (null (second current)) (third current))
-        ;; The path was empty or is composed of a single knot.  Stop
-        ;; here.
-        (return-from path-iterator-next (values-list current)))
-      ;; Advance current until the following knot is distinct
-      (loop do (setf next (multiple-value-list (path-iterator-next sub)))
-         while (zerop (point-distance (second current) (second next)))
-         ;; Is the path made of identical knots?
-         when (third next)
-         do (return-from path-iterator-next (values-list next))
-         ;; Advance current
-         do (setf current next)))
-    ;; CURRENT will be the result knot
-    ;; NEXT become the current knot
-    (setf result current
-          current next)
-    (cond
-      ((and (third current) (not cyclic-p))
-       (setf next (multiple-value-list (path-iterator-next sub))))
-      (t
-       ;; Advance current until the following knot is distinct
-       (loop do (setf next (multiple-value-list (path-iterator-next sub)))
-          until (and (third current) (not cyclic-p))
-          while (zerop (point-distance (second current) (second next)))
-          ;; Have we reached the end of the path?
-          when (third current)
-          do (setf (third result) t)
-          ;; Advance current
-          do (setf current next))))
-    ;; Keep the state for the next iteration
-    (setf (filter-distinct-state-current iterator) current
-          (filter-distinct-state-next iterator) next)
-    ;; at the end, we must have 3 things:
-    ;; - the state to return (aka result)
-    ;; - the next state to return (aka current), possibly with invalid end info,
-    ;; - the unprocessed state, the one after the "current" (aka next)
-    (values-list result)))
+  (with-slots ((sub iterator) cyclic-p fixed next next-is-end-p) iterator
+    (when fixed
+      ;; constant result cached
+      (return-from path-iterator-next (values-list fixed)))
+    (labels ((get-next ()
+               "Get the next knot information as a list (not as
+               multiple values)."
+               (multiple-value-list (path-iterator-next sub)))
+             (distinct-p (a b)
+               "Test if A and B have distinct knots."
+               (not (zerop (point-distance (second a) (second b)))))
+             (move-to-next (previous loop-p)
+               "Move iterator to find a knot distinct from the
+               PREVIOUS. Also indicate if the resulting knot is
+               the first of the sub iterator, and if end of path
+               was encountered. This is needed to compute the
+               effective END-P flag for the resulting iterator."
+               (loop
+                  with first-p = (third previous)
+                  with end-encountered-p = (third previous)
+                  for current = (get-next)
+                  until (or (distinct-p previous current)
+                            (and (not loop-p) first-p))
+                  do (setf first-p (third current))
+                  when (third current)
+                  do (setf end-encountered-p t)
+                  finally (return (values current first-p end-encountered-p)))))
+      (let (result)
+        (unless next
+          ;; First time we iterate.
+          (setf next-is-end-p nil)
+          (let ((first (get-next)))
+            (cond
+              ((or (not (second first))
+                   (third first))
+               ;; It was an empty path or a single knot path. Cache it
+               ;; and returns it for each further iterations.
+               (setf fixed first
+                     result first))
+              (cyclic-p
+               (multiple-value-bind (first-in-cycle first-p end-p) (move-to-next first nil)
+                 (declare (ignore first-p))
+                 (cond
+                   (end-p
+                    (setf (third first) t
+                          fixed first
+                          result first))
+                   (t
+                    (setf next first-in-cycle)))))
+              (t
+               (setf next first)))))
+        (unless result
+          ;; We copy NEXT because we need to modify RESULT, and since
+          ;; NEXT is kept for the next iteration, we take care of not
+          ;; modifying it.
+          (setf result (copy-seq next)
+                (third result) next-is-end-p)
+          (multiple-value-bind (current first-p end-encountered-p) (move-to-next next cyclic-p)
+            (setf next current)
+            ;; Set end marker
+            (cond
+              (cyclic-p
+               (setf next-is-end-p first-p)
+               (when (and end-encountered-p (not first-p))
+                 (setf (third result) t)))
+              (t
+               (setf (third result) end-encountered-p)))))
+        (values-list result)))))
 
 ;;; Misc
 
