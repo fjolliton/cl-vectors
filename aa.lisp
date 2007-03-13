@@ -15,6 +15,12 @@
 ;;;;
 ;;;; Changelogs:
 ;;;;
+;;;; 2007-03-11: Extended the protocol to provide a way to sweep only
+;;;;             a rectangular zone of the resulting state. This was
+;;;;             done with some new functions: FREEZE-STATE,
+;;;;             SCANLINE-SWEEP, SCANLINE-Y and CELLS-SWEEP/RECTANGLE.
+;;;;             The function CELLS-SWEEP is now based on them.
+;;;;
 ;;;; 2007-02-25: Released under LLGPL this time. Future changes made
 ;;;;             in this file will be thus covered by this license.
 ;;;;
@@ -150,7 +156,11 @@
            #:state-reset
            #:line
            #:line-f
-           #:cells-sweep))
+           #:freeze-state
+           #:scanline-y
+           #:scanline-sweep
+           #:cells-sweep
+           #:cells-sweep/rectangle))
 
 (in-package #:net.tuxee.aa)
 
@@ -303,6 +313,10 @@ an alpha value.")
   "AA state. Hold all the cells generated when drawing lines."
   (current-cell (make-cell) :type cell)
   (cells nil)
+  (scanlines nil)
+  ;; these slots for reusing cells with state-reset
+  (end-of-lines nil)
+  (dropped-cells nil)
   (recycling-cells (cons nil nil)))
 
 (defun state-reset (state)
@@ -310,7 +324,18 @@ an alpha value.")
 faster or less memory consuming to reset a state and reuse it,
 rather than creating a new state."
   (cell-reset (state-current-cell state))
-  (setf (state-recycling-cells state) (cons nil (state-cells state))))
+  (when (state-end-of-lines state)
+    ;; join back the scanlines to form a single list
+    (loop for line in (rest (state-scanlines state))
+       for eol in (state-end-of-lines state)
+       do (setf (cdr eol) line)))
+  (let ((cells (nconc (state-dropped-cells state)
+                      (state-cells state))))
+    (setf (state-recycling-cells state) (cons nil cells)
+          (state-scanlines state) nil
+          (state-end-of-lines state) nil
+          (state-dropped-cells state) nil
+          (state-cells state) cells)))
 
 (declaim (inline state-push-current-cell))
 (defun state-push-cell (state cell)
@@ -350,6 +375,7 @@ coordinate.
 
 Returns the current cell."
   (let ((current-cell (state-current-cell state)))
+    (declare (cell current-cell))
     (when (or (/= x (cell-x current-cell))
               (/= y (cell-y current-cell)))
       ;; Store the current cell, then reset it.
@@ -368,7 +394,7 @@ Returns the current cell."
 (defun line (state x1 y1 x2 y2)
   "Draw a line from (X1,Y1) to (X2,Y2). All coordinates are
 integers with subpixel accuracy (a pixel width is given by
-+CELL-WIDTH+.) The line must be part of a closed polygons."
++CELL-WIDTH+.) The line must be part of a closed polygon."
   (declare (integer x1 y1 x2 y2))
   (map-grid-spans (lambda (x y fx1 fy1 fx2 fy2)
                          (update-cell (set-current-cell state x y)
@@ -392,52 +418,119 @@ actual area of a cell."
   (truncate (- (* 2 +cell-width+ cover) area)
             +alpha-divisor+))
 
-(defun cells-sweep (state function &optional (function-span))
-  "Call FUNCTION for each pixel on the polygon path described by
-previous call to LINE or LINE-F. The pixels are scanned in
-increasing Y, then on increasing X. For optimization purpose, the
-optional FUNCTION-SPAN, if provided, is called for a full span of
-identical alpha pixel. If not provided, a call is made to
-FUNCTION for each pixel in the span."
-  ;; It is the final step of the algorithm.
-  (state-finalize state)
-  (state-sort-cells state)
-  (let ((cells (state-cells state)))
+(defun freeze-state (state)
+  "Freeze the state and return a list of scanlines. A scanline is
+an object which can be examined with SCANLINE-Y and processed
+with SCANLINE-SWEEP."
+  (unless (state-scanlines state)
+    (state-finalize state)
+    (state-sort-cells state)
+    (let (lines
+          end-of-lines
+          dropped-cells
+          (cells (state-cells state)))
+      (when cells
+        (push cells lines)
+        (let ((previous-cell (first cells)))
+          (loop
+             (unless (rest cells)
+               (return))
+             (let ((cell (second cells))
+                   (rest (cdr cells)))
+               (cond
+                 ((/= (cell-y previous-cell) (cell-y cell))
+                  ;; different y, break the cells list, begin a new
+                  ;; line.
+                  (push cells end-of-lines)
+                  (push rest lines)
+                  (setf (cdr cells) nil
+                        previous-cell cell)
+                  (setf cells rest))
+                 ((/= (cell-x previous-cell) (cell-x cell))
+                  ;; same y, different x, do nothing special, move to
+                  ;; the next cell.
+                  (setf previous-cell cell)
+                  (setf cells rest))
+                 (t
+                  ;; same coordinates, accumulate current cell into
+                  ;; the previous, and remove current from the list.
+                  (incf (cell-cover previous-cell) (cell-cover cell))
+                  (incf (cell-area previous-cell) (cell-area cell))
+                  (push cell dropped-cells)
+                  (setf (cdr cells) (cdr rest))))))))
+      (setf (state-scanlines state) (nreverse lines)
+            (state-end-of-lines state) (nreverse end-of-lines)
+            (state-dropped-cells state) dropped-cells)))
+  (state-scanlines state))
+
+(declaim (inline scanline-y))
+(defun scanline-y (scanline)
+  "Get the Y position of SCANLINE."
+  (cell-y (first scanline)))
+
+(defun scanline-sweep (scanline function function-span &key start end)
+  "Call FUNCTION for each pixel on the polygon covered by
+SCANLINE. The pixels are scanned in increasing X. The sweep can
+be limited to a range by START (included) or/and END (excluded)."
+  (declare (optimize speed (debug 0) (safety 0) (space 2)))
+  (let ((cover 0)
+        (y (scanline-y scanline))
+        (cells scanline)
+        (last-x nil))
+    (when start
+      ;; skip initial cells that are before START
+      (loop while (and cells (< (cell-x (car cells)) start))
+         do (incf cover (cell-cover (car cells)))
+         (setf last-x (cell-x (car cells))
+               cells (cdr cells))))
     (when cells
-      (let* ((first-cell (first cells))
-             (x (cell-x first-cell))
-             (y (cell-y first-cell))
-             (area (cell-area first-cell))
-             (cover (cell-cover first-cell)))
-        (flet ((call ()
-                 (let ((alpha (compute-alpha cover area)))
-                   (unless (zerop alpha)
-                     (funcall function x y alpha)))))
-          (dolist (cell (rest cells))
-            (cond
-              ;; different line
-              ((/= y (cell-y cell))
-               (call)
-               (setf x (cell-x cell)
-                     y (cell-y cell)
-                     cover (cell-cover cell)
-                     area (cell-area cell)))
-              ;; same line, but different column
-              ((/= x (cell-x cell))
-               (call)
-               (when (> (- (cell-x cell) x) 1)
-                 ;; "solid span"
-                 (let ((alpha (compute-alpha cover 0)))
-                   (if function-span
-                       (funcall function-span (1+ x) (cell-x cell) y alpha)
-                       (loop for ix from (1+ x) below (cell-x cell)
-                          do (funcall function ix y alpha)))))
-               (setf x (cell-x cell)
-                     area (cell-area cell))
-               (incf cover (cell-cover cell)))
-              ;; same line, same column, accumulate
-              (t
-               (incf cover (cell-cover cell))
-               (incf area (cell-area cell)))))
-          (call)))))
+      (dolist (cell cells)
+        (let ((x (cell-x cell)))
+          (when (and last-x (> x (1+ last-x)))
+            (let ((alpha (compute-alpha cover 0)))
+              (unless (zerop alpha)
+                (let ((start-x (if start (max start (1+ last-x)) (1+ last-x)))
+                      (end-x (if end (min end x) x)))
+                  (if function-span
+                      (funcall function-span start-x end-x y alpha)
+                      (loop for ix from start-x below end-x
+                         do (funcall function ix y alpha)))))))
+          (when (and end (>= x end))
+            (return))
+          (incf cover (cell-cover cell))
+          (let ((alpha (compute-alpha cover (cell-area cell))))
+            (unless (zerop alpha)
+              (funcall function x y alpha)))
+          (setf last-x x))))))
+
+(defun cells-sweep/rectangle (state x1 y1 x2 y2 function &optional function-span)
+  "Call FUNCTION for each pixel on the polygon described by
+previous call to LINE or LINE-F. The pixels are scanned in
+increasing Y, then on increasing X. This is limited to the
+rectangle region specified with (X1,Y1)-(X2,Y2) (where X2 must be
+greater than X1 and Y2 must be greater than Y1, to describe a
+non-empty region.)
+
+For optimization purpose, the optional FUNCTION-SPAN, if
+provided, is called for a full span of identical alpha pixel. If
+not provided, a call is made to FUNCTION for each pixel in the
+span."
+  (let ((scanlines (freeze-state state)))
+    (dolist (scanline scanlines)
+      (when (<= y1 (scanline-y scanline) (1- y2))
+        (scanline-sweep scanline function function-span :start x1 :end x2))))
+  (values))
+
+(defun cells-sweep (state function &optional function-span)
+  "Call FUNCTION for each pixel on the polygon described by
+previous call to LINE or LINE-F. The pixels are scanned in
+increasing Y, then on increasing X.
+
+For optimization purpose, the optional FUNCTION-SPAN, if
+provided, is called for a full span of identical alpha pixel. If
+not provided, a call is made to FUNCTION for each pixel in the
+span."
+  (let ((scanlines (freeze-state state)))
+    (dolist (scanline scanlines)
+      (scanline-sweep scanline function function-span)))
   (values))
