@@ -22,4 +22,5 @@
   :version "$VERSION$"
   :author "Frederic Jolliton <frederic@jolliton.com>"
   :license "LLGPL (http://opensource.franz.com/preamble.html)"
-  :components ((:file "aa")))
+  :components ((:file "aa")
+               (:file "aa-bin")))
