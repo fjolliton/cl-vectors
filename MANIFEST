@@ -1,4 +1,5 @@
 aa.lisp
+aa-bin.lisp
 aa-misc.lisp
 cl-aa.asd
 cl-aa-misc.asd

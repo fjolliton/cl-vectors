@@ -11,7 +11,20 @@ The project homepage can be found at the following URL:
 Changes
 -------
 
- version 0.1.2
+ version 0.1.3 - 2007-03-14
+
+  - fixed paths:filter-distinct to better choose knots to keep (really
+    eliminating zero length interpolation.)
+
+  - extended cl-aa protocol to provide a way to sweep only a
+    rectangular zone of the resulting state. (New functions are
+    freeze-state, scanline-sweep, scanline-y and
+    cells-sweep/rectangle.)
+
+  - added a version of cl-aa specialized for rendering non-antialiased
+    polygon, named aa-bin and included in the cl-aa system definition.
+
+ version 0.1.2 - 2007-03-08
 
   - fixed make-circle-path. A bug prevented circle creation with non
     positive coordinates. Also, the circle path doesn't include the
@@ -24,11 +37,11 @@ Changes
 
   - vectors:update-state now accept either a path or a list of paths.
 
- version 0.1.1
+ version 0.1.1 - 2007-03-06
 
   - fixed cl-aa.asd system definition ("cl-aa" -> "aa").
     Thanks to Ivan Toshkov.
 
- version 0.1
+ version 0.1 - 2007-03-06
 
   - Initial release.
