@@ -21,6 +21,6 @@
   :description "cl-aa: polygon rasterizer"
   :version "$VERSION$"
   :author "Frederic Jolliton <frederic@jolliton.com>"
-  :license "LLGPL (http://opensource.franz.com/preamble.html)"
+  :licence "LLGPL (http://opensource.franz.com/preamble.html)"
   :components ((:file "aa")
                (:file "aa-bin")))

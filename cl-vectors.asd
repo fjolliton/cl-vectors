@@ -21,6 +21,6 @@
   :description "cl-paths: vectorial paths manipulation"
   :version "$VERSION$"
   :author "Frederic Jolliton <frederic@jolliton.com>"
-  :license "LLGPL (http://opensource.franz.com/preamble.html)"
+  :licence "LLGPL (http://opensource.franz.com/preamble.html)"
   :depends-on ("cl-aa" "cl-paths")
   :components ((:file "vectors")))
