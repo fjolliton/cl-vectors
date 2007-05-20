@@ -11,10 +11,6 @@
 ;;;; Lesser GNU Public License for more details.
 
 ;;;; This file provides facilities to create and manipulate vectorial paths.
-;;;;
-;;;; Changelogs:
-;;;;
-;;;; 2007-02-20: first release
 
 #+nil(error "This file assume that #+NIL is never defined.")
 
@@ -508,39 +504,50 @@ knot is the last on the path or if the path is empty."))
 
 (defun path-translate (path vector)
   "Translate the whole path accordingly to VECTOR."
-  (unless (and (zerop (point-x vector))
-               (zerop (point-y vector)))
-    (do-path (path interpolation knot)
-      (setf knot (p+ knot vector))
-      (interpolation-translate interpolation vector)))
+  (if (listp path)
+      (dolist (path-item path)
+        (path-translate path-item vector))
+      (unless (and (zerop (point-x vector))
+                   (zerop (point-y vector)))
+        (do-path (path interpolation knot)
+          (setf knot (p+ knot vector))
+          (interpolation-translate interpolation vector))))
   path)
 
 (defun path-rotate (path angle &optional center)
   "Rotate the whole path by ANGLE radian around CENTER (which is
 the origin if unspecified.)"
-  (unless (zerop angle)
-    (when center
-      (path-translate path (p* center -1.0)))
-    (do-path (path interpolation knot)
-      (setf knot (point-rotate knot angle))
-      (interpolation-rotate interpolation angle))
-    (when center
-      (path-translate path center)))
+  (if (listp path)
+      (dolist (path-item path)
+        (path-rotate path-item angle center))
+      (unless (zerop angle)
+        (when center
+          (path-translate path (p* center -1.0)))
+        (do-path (path interpolation knot)
+          (setf knot (point-rotate knot angle))
+          (interpolation-rotate interpolation angle))
+        (when center
+          (path-translate path center))))
   path)
 
 (defun path-scale (path scale-x scale-y &optional center)
   "Scale the whole path by (SCALE-X,SCALE-Y) from CENTER (which
 is the origin if unspecified.) Warning: not all interpolations
 support non uniform scaling (when scale-x /= scale-y)."
-  (when center
-    (path-translate path (p* center -1.0)))
-  (do-path (path interpolation knot)
-    (setf knot (p* knot scale-x scale-y))
-    (interpolation-scale interpolation scale-x scale-y))
-  (when center
-    (path-translate path center))
-  (when (minusp (* scale-x scale-y))
-    (path-reverse path))
+  ;;; FIXME: What to do about path-orientation?
+  (if (listp path)
+      (dolist (path-item path)
+        (path-scale path-item scale-x scale-y center))
+      (progn
+        (when center
+          (path-translate path (p* center -1.0)))
+        (do-path (path interpolation knot)
+          (setf knot (p* knot scale-x scale-y))
+          (interpolation-scale interpolation scale-x scale-y))
+        (when center
+          (path-translate path center))
+        (when (minusp (* scale-x scale-y))
+          (path-reverse path))))
   path)
 
 ;;;--[ Interpolations ]------------------------------------------------------
