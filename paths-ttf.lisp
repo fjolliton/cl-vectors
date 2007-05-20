@@ -14,7 +14,8 @@
   (:use #:cl #:net.tuxee.paths #:zpb-ttf)
   (:nicknames #:paths-ttf)
   (:export #:paths-from-glyph
-           #:paths-from-string))
+           #:paths-from-string
+           #:make-string-path))
 
 (in-package #:net.tuxee.paths-ttf)
 
@@ -65,3 +66,38 @@
                                             :offset offset :scale-x scale-x :scale-y scale-y)))
          (push glyph-paths result)))
     (apply #'nconc (nreverse result))))
+
+(defun make-string-path (font-loader text
+                         &key (position (make-point 0 0)) (size 12)
+                         (halign :left) (valign :baseline) (inversed t) (kerning t))
+  (let* ((em (units/em font-loader))
+         (scale (/ size em))
+         (scale-x scale)
+         (scale-y scale))
+    (when inversed
+      (setf scale-y (- scale-y)))
+    (let ((bb (string-bounding-box text font-loader :kerning kerning)))
+      (setf position (p- position
+                         (p* (make-point
+                              (ecase halign
+                                (:none
+                                 0)
+                                (:left
+                                 (aref bb 0))
+                                (:right
+                                 (aref bb 2))
+                                (:center
+                                 (/ (+ (aref bb 0) (aref bb 2)) 2.0)))
+                              (ecase valign
+                                (:baseline
+                                 0)
+                                (:top
+                                 (aref bb 1))
+                                (:bottom
+                                 (aref bb 3))
+                                (:center
+                                 (/ (+ (aref bb 1) (aref bb 3)) 2.0))))
+                             scale))))
+    (paths-from-string font-loader text :offset position
+                       :scale-x scale-x :scale-y scale-y
+                       :kerning kerning)))
