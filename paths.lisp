@@ -141,6 +141,7 @@ as 2 values. Return NIL if the input vector had a null length."
 
 (defstruct path
   (type :open-polyline :type (member :open-polyline :closed-polyline :polygon))
+  (orientation :unknown :type (member :unknown :cw :ccw))
   (knots (make-array 0 :adjustable t :fill-pointer 0))
   (interpolations (make-array 0 :adjustable t :fill-pointer 0)))
 
@@ -156,7 +157,8 @@ the following keyword:
 
 (defun path-clear (path)
   "Clear the path such that it is empty."
-  (setf (fill-pointer (path-knots path)) 0
+  (setf (path-orientation path) :unknown
+        (fill-pointer (path-knots path)) 0
         (fill-pointer (path-interpolations path)) 0))
 
 (defun path-reset (path knot)
@@ -168,7 +170,10 @@ the following keyword:
 (defun path-extend (path interpolation knot)
   "Extend the path to KNOT, with INTERPOLATION."
   (vector-push-extend interpolation (path-interpolations path))
-  (vector-push-extend knot (path-knots path)))
+  (vector-push-extend knot (path-knots path))
+  ;; Extending the path can change how the orientation is
+  ;; auto-detected.
+  (setf (path-orientation path) :unknown))
 
 (defun path-concatenate (path interpolation other-path)
   "Append OTHER-PATH to PATH, joined by INTERPOLATION."
@@ -196,6 +201,36 @@ empty."
   (let ((knots (path-knots path)))
     (when (plusp (length knots))
       (aref knots (1- (length knots))))))
+
+(defun path-guess-orientation (path)
+  "Guess the orientation of the path.
+
+This is implemented loosely because we don't take care about
+interpolations. We only consider a polygon described by the
+knots. However, it should work..
+
+Update path orientation flag, and returns either :CW or :CCW."
+  (let ((knots (path-knots path)))
+    (let ((loose-area (loop for last-knot-index = (1- (length knots)) then knot-index
+                         for knot-index below (length knots)
+                         sum (- (* (point-x (aref knots last-knot-index))
+                                   (point-y (aref knots knot-index)))
+                                (* (point-x (aref knots knot-index))
+                                   (point-y (aref knots last-knot-index)))))))
+      (setf (path-orientation path) (if (plusp loose-area) :ccw :cw)))))
+
+(defun path-orient (path orientation &optional other-paths)
+  "Orient the path in the given orientation.
+
+If OTHER-PATHS is specified, then the paths are reversed
+inconditionnaly if PATH is also reversed."
+  (assert (member orientation '(:cw :ccw)) (orientation) "Expected either :CW or :CCW")
+  (when (eq (path-orientation path) :unknown)
+    (path-guess-orientation path))
+  (unless (eq (path-orientation path) orientation)
+    (path-reverse path)
+    (map nil #'path-reverse other-paths))
+  (values))
 
 ;;; Iterators
 
@@ -429,7 +464,8 @@ knot is the last on the path or if the path is empty."))
                 (interpolation-clone (aref new-interpolations i))))
     (let ((new-path (create-path (path-type path))))
       (setf (path-knots new-path) (copy-seq (path-knots path))
-            (path-interpolations new-path) new-interpolations)
+            (path-interpolations new-path) new-interpolations
+            (path-orientation new-path) (path-orientation path))
       new-path)))
 
 (defun path-reverse (path)
@@ -444,7 +480,12 @@ knot is the last on the path or if the path is empty."))
                  (aref interpolations (- length i))))
   ;; reverse each interpolation
   (loop for interpolation across (path-interpolations path)
-     do (interpolation-reverse interpolation)))
+     do (interpolation-reverse interpolation))
+  (unless (eq (path-orientation path) :unknown)
+    (setf (path-orientation path) (ecase (path-orientation path)
+                                    (:cw :ccw)
+                                    (:ccw :cw))))
+  path)
 
 (defun path-reversed (path)
   (let ((new-path (path-clone path)))

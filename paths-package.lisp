@@ -33,6 +33,7 @@
            #:path-replace
            #:path-size
            #:path-last-knot
+           #:path-orient
            #:path-clone
            #:path-reverse
            #:path-reversed
