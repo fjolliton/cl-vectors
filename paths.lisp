@@ -550,6 +550,34 @@ support non uniform scaling (when scale-x /= scale-y)."
           (path-reverse path))))
   path)
 
+(defun path-end-info (path side)
+  (when (>= (path-size path) 2)
+    (if (not side)
+        (values (aref (path-knots path) 0)
+                (interpolation-normal (aref (path-interpolations path) 1)
+                                      (aref (path-knots path) 0)
+                                      (aref (path-knots path) 1)
+                                      nil))
+        (let ((ks (length (path-knots path)))
+              (is (length (path-interpolations path))))
+          (values (aref (path-knots path) (1- ks))
+                  (interpolation-normal (aref (path-interpolations path) (1- is))
+                                        (aref (path-knots path) (- is 2))
+                                        (aref (path-knots path) (- is 1))
+                                        t))))))
+
+(defun path-transform-as-marker (path path-reference side &key (offset 0.0) (scale 1.0) (angle 0.0))
+  "Translate, rotate and scale PATH representing a marker such
+that it is adapted to the PATH-REFERENCE. If SIDE is false, it is
+placed at the start of the path, otherwise it is placed at the
+end of the path."
+  (multiple-value-bind (knot normal) (path-end-info path-reference side)
+    (when knot
+      (path-rotate path (+ (/ pi -2) angle (point-angle normal)))
+      (path-scale path scale scale)
+      (path-translate path (p+ knot (p* normal offset)))
+      path)))
+
 ;;;--[ Interpolations ]------------------------------------------------------
 
 (defgeneric interpolation-segment (interpolation k1 k2 function)

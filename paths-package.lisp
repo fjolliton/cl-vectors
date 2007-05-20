@@ -40,6 +40,7 @@
            #:path-translate
            #:path-rotate
            #:path-scale
+           #:path-transform-as-marker
            ;; Interpolators
            #:make-straight-line
            #:make-arc
