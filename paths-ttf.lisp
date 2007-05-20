@@ -19,7 +19,7 @@
 
 (in-package #:net.tuxee.paths-ttf)
 
-(defun paths-from-glyph (glyph &key (offset (make-point 0 0)) (scale-x 1.0) (scale-y 1.0))
+(defun paths-from-glyph (glyph &key (offset (make-point 0 0)) (scale-x 1.0) (scale-y 1.0) (auto-orient nil))
   (flet ((point (p) (p+ (make-point (* (x p) scale-x)
                                     (* (y p) scale-y))
                         offset)))
@@ -42,9 +42,12 @@
           (when (minusp (* scale-x scale-y))
             (path-reverse path))
           (push path result)))
-      (nreverse result))))
+      (setq result (nreverse result))
+      (when auto-orient
+        (path-orient (car result) auto-orient (cdr result)))
+      result)))
 
-(defun paths-from-string (font-loader text &key (offset (make-point 0 0)) (scale-x 1.0) (scale-y 1.0) (kerning t))
+(defun paths-from-string (font-loader text &key (offset (make-point 0 0)) (scale-x 1.0) (scale-y 1.0) (kerning t) (auto-orient nil))
   (let (result)
     (loop
        for previous-char = nil then char
@@ -63,7 +66,8 @@
                                                    0)))
                                          0))))
        (let ((glyph-paths (paths-from-glyph glyph
-                                            :offset offset :scale-x scale-x :scale-y scale-y)))
+                                            :offset offset :auto-orient auto-orient
+                                            :scale-x scale-x :scale-y scale-y)))
          (push glyph-paths result)))
     (apply #'nconc (nreverse result))))
 
@@ -100,4 +104,5 @@
                              scale))))
     (paths-from-string font-loader text :offset position
                        :scale-x scale-x :scale-y scale-y
-                       :kerning kerning)))
+                       :kerning kerning
+                       :auto-orient :cw)))
