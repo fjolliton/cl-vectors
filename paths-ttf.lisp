@@ -43,21 +43,23 @@
           (push path result)))
       (nreverse result))))
 
-(defun paths-from-string (font-loader text &key (offset (make-point 0 0)) (scale-x 1.0) (scale-y 1.0))
+(defun paths-from-string (font-loader text &key (offset (make-point 0 0)) (scale-x 1.0) (scale-y 1.0) (kerning t))
   (let (result)
     (loop
        for previous-char = nil then char
        for char across text
        for previous-glyph = nil then glyph
-       for glyph = (zpb-ttf:find-glyph char font-loader)
+       for glyph = (find-glyph char font-loader)
        do (when previous-char
             (setf offset
                   (paths::p+ offset
                              (make-point (* scale-x
-                                            (+ (zpb-ttf:advance-width previous-glyph)
-                                               (zpb-ttf:kerning-offset previous-char
-                                                                       char
-                                                                       font-loader)))
+                                            (+ (advance-width previous-glyph)
+                                               (if kerning
+                                                   (kerning-offset previous-char
+                                                                   char
+                                                                   font-loader)
+                                                   0)))
                                          0))))
        (let ((glyph-paths (paths-from-glyph glyph
                                             :offset offset :scale-x scale-x :scale-y scale-y)))
