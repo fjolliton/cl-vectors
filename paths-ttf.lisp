@@ -73,12 +73,12 @@
 
 (defun make-string-path (font-loader text
                          &key (position (make-point 0 0)) (size 12)
-                         (halign :left) (valign :baseline) (inversed t) (kerning t))
+                         (halign :left) (valign :baseline) (inverted t) (kerning t))
   (let* ((em (units/em font-loader))
          (scale (/ size em))
          (scale-x scale)
          (scale-y scale))
-    (when inversed
+    (when inverted
       (setf scale-y (- scale-y)))
     (let ((bb (string-bounding-box text font-loader :kerning kerning)))
       (setf position (p- position
