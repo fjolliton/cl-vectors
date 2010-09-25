@@ -64,15 +64,15 @@
        for glyph = (find-glyph char font-loader)
        do (when previous-char
             (setf offset
-                  (paths::p+ offset
-                             (make-point (* scale-x
-                                            (+ (advance-width previous-glyph)
-                                               (if kerning
-                                                   (kerning-offset previous-char
-                                                                   char
-                                                                   font-loader)
-                                                   0)))
-                                         0))))
+                  (p+ offset
+                      (make-point (* scale-x
+                                     (+ (advance-width previous-glyph)
+                                        (if kerning
+                                            (kerning-offset previous-char
+                                                            char
+                                                            font-loader)
+                                            0)))
+                                  0))))
        (let ((glyph-paths (paths-from-glyph glyph
                                             :offset offset :auto-orient auto-orient
                                             :scale-x scale-x :scale-y scale-y)))
