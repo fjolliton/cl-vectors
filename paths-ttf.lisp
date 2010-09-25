@@ -41,7 +41,7 @@
               (if b
                   (path-extend path (make-bezier-curve (list pb)) pc)
                   (path-extend path (make-straight-line) pc))
-              (setf last-point pc)))
+              (setq last-point pc)))
           (when (minusp (* scale-x scale-y))
             (path-reverse path))
           (push path result)))
@@ -85,9 +85,9 @@
          (scale-x scale)
          (scale-y scale))
     (when inverted
-      (setf scale-y (- scale-y)))
+      (setq scale-y (- scale-y)))
     (let ((bb (string-bounding-box text font-loader :kerning kerning)))
-      (setf position (p- position
+      (setq position (p- position
                          (p* (make-point
                               (ecase halign
                                 (:none
