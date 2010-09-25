@@ -19,7 +19,10 @@
 
 (in-package #:net.tuxee.paths-ttf)
 
-(defun paths-from-glyph (glyph &key (offset (make-point 0 0)) (scale-x 1.0) (scale-y 1.0) (auto-orient nil))
+(defun paths-from-glyph (glyph &key (offset (make-point 0 0))
+                                    (scale-x 1.0) (scale-y 1.0)
+                                    (auto-orient nil))
+  "Extract paths from a glyph."
   (flet ((point (p) (p+ (make-point (* (x p) scale-x)
                                     (* (y p) scale-y))
                         offset)))
@@ -47,7 +50,10 @@
         (path-orient (car result) auto-orient (cdr result)))
       result)))
 
-(defun paths-from-string (font-loader text &key (offset (make-point 0 0)) (scale-x 1.0) (scale-y 1.0) (kerning t) (auto-orient nil))
+(defun paths-from-string (font-loader text &key (offset (make-point 0 0))
+                                                (scale-x 1.0) (scale-y 1.0)
+                                                (kerning t) (auto-orient nil))
+  "Extract paths from a string."
   (let (result)
     (loop
        for previous-char = nil then char
@@ -71,9 +77,9 @@
          (push glyph-paths result)))
     (apply #'nconc (nreverse result))))
 
-(defun make-string-path (font-loader text
-                         &key (position (make-point 0 0)) (size 12)
-                         (halign :left) (valign :baseline) (inverted t) (kerning t))
+(defun make-string-path (font-loader text &key (position (make-point 0 0)) (size 12)
+                                               (halign :left) (valign :baseline)
+                                               (inverted t) (kerning t))
   (let* ((em (units/em font-loader))
          (scale (/ size em))
          (scale-x scale)
