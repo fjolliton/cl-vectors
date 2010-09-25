@@ -46,7 +46,7 @@
             (path-reverse path))
           (push path result)))
       (setq result (nreverse result))
-      (when auto-orient
+      (when (and auto-orient result)
         (path-orient (car result) auto-orient (cdr result)))
       result)))
 
