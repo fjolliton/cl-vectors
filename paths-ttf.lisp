@@ -38,9 +38,11 @@
                   (assert (and (= (point-x last-point) (point-x pa))
                                (= (point-y last-point) (point-y pa))))
                   (path-reset path pa))
-              (if b
-                  (path-extend path (make-bezier-curve (list pb)) pc)
-                  (path-extend path (make-straight-line) pc))
+              (path-extend path
+                           (if b
+                               (make-bezier-curve (list pb))
+                               (make-straight-line))
+                           pc)
               (setq last-point pc)))
           (when (minusp (* scale-x scale-y))
             (path-reverse path))
