@@ -6,8 +6,8 @@ cl-aa-misc.asd
 cl-paths.asd
 cl-paths-ttf.asd
 cl-vectors.asd
-COPYING
 doc.lisp
+MIT-LICENSE
 paths-annotation.lisp
 paths.lisp
 paths-package.lisp

@@ -1,8 +1,8 @@
 cl-vectors
 ==========
 
-This library is released under the LLGPL license. See the COPYING file
-which should be included in the present distribution.
+This library is released under the MIT license. See the MIT-LICENSE
+file which should be included in the present distribution.
 
 The project homepage can be found at the following URL:
 
@@ -10,6 +10,11 @@ The project homepage can be found at the following URL:
 
 Changes
 -------
+
+ version 0.1.5 - 2013-02-13
+
+  - the project is now released under the MIT license.  It was
+    previously offered under the LLGPL license.
 
  version 0.1.4b - 2010-09-25
 
