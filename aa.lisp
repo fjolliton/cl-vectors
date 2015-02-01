@@ -176,7 +176,11 @@ smaller value should NOT increase performance.")
   "Call FUNCTION for each segment of a line with integer
 coordinates (A1,B1)-(A2,B2) cut by a grid of spacing
 +CELL-WIDTH+."
+  (declare (optimize speed (safety 0)))
+  (declare (function function))
+  (declare (fixnum a1 b1 a2 b2))
   (multiple-value-bind (b1-m b1-f) (floor b1 +cell-width+)
+    (declare (fixnum b1-m b1-f))
     (multiple-value-bind (b2-m b2-f) (floor b2 +cell-width+)
       (cond
         ;; The line doesn't cross the grid in the main axis. We have a
@@ -187,28 +191,35 @@ coordinates (A1,B1)-(A2,B2) cut by a grid of spacing
         ;; 2 segments.
         (t
          (let* ((b-m b1-m)
-                (delta-a (- a2 a1))
-                (delta-b (abs (- b2 b1)))
-                (b-increment (signum (- b2 b1)))
+                (delta-a (the fixnum (- a2 a1)))
+                (delta-b (the fixnum (abs (- b2 b1))))
+                (b-increment (the fixnum (signum (the fixnum (- b2 b1)))))
                 (from-boundary (if (< b1 b2) 0 +cell-width+)) 
                 (to-boundary (if (< b1 b2) +cell-width+ 0)))
-           (multiple-value-bind (a ma) (floor (+ (* delta-a (if (< b1 b2)
-                                                                (- +cell-width+ b1-f)
-                                                                b1-f))
+	   (declare (fixnum b-m delta-a delta-b b-increment from-boundary to-boundary))
+           (multiple-value-bind (a ma) (floor (+ (the fixnum 
+						      (* delta-a (if (< b1 b2)
+								     (- +cell-width+ b1-f)
+								     b1-f)))
                                                  ;; a littre change compared to
                                                  ;; AntiGrain AA algorithm. Used
                                                  ;; to round to the nearest integer
                                                  ;; instead of the "floor" one.
                                                  (floor delta-b 2))
                                               delta-b)
+	     (declare (fixnum a ma))
              (incf a a1)
              ;; The first segment (to reach the first grid boundary)
              (funcall function b1-m a1 b1-f a to-boundary)
              (incf b-m b-increment)
              (when (/= b-m b2-m)
-               (multiple-value-bind (step mod) (floor (* +cell-width+ delta-a) delta-b)
+               (multiple-value-bind (step mod) (the fixnum 
+						    (floor (the fixnum 
+								(* +cell-width+
+								   delta-a)) delta-b))
                  (loop
                     do (let ((prev-a a))
+			 (declare (fixnum prev-a))
                          (incf a step)
                          (incf ma mod)
                          (when (>= ma delta-b)
@@ -225,14 +236,16 @@ coordinates (A1,B1)-(A2,B2) cut by a grid of spacing
 (defun map-grid-spans (function x1 y1 x2 y2)
   "Call FUNCTION for each segments of the line from (X1,Y1)
 to (X2,Y2) cut by a grid with spacing +CELL-WIDTH+."
-  (check-type x1 integer)
-  (check-type y1 integer)
-  (check-type x2 integer)
-  (check-type y2 integer)
+  (declare (optimize speed (safety 0)))
+  (check-type x1 fixnum)
+  (check-type y1 fixnum)
+  (check-type x2 fixnum)
+  (check-type y2 fixnum)
   (flet ((hline (y-m x1 y1-f x2 y2-f)
-           (declare (integer y-m x1 y1-f x2 y2-f))
+           (declare (fixnum y-m x1 y1-f x2 y2-f))
            (flet ((pixel (x-m y1-f x1-f y2-f x2-f)
-                    (declare (integer x-m y1-f x1-f y2-f x2-f))
+                    (declare (fixnum x-m y1-f x1-f y2-f x2-f))
+		    (declare (function function))
                     (funcall function x-m y-m x1-f y1-f x2-f y2-f)))
              ;; further split along Y axis
              (map-line-spans #'pixel y1-f x1 y2-f x2))))
@@ -251,10 +264,10 @@ to (X2,Y2) cut by a grid with spacing +CELL-WIDTH+."
   "A cell used to represent the partial area covered by a line
 passing by a corresponding pixel. The cell alone doesn't hold all
 the information to calculate the area."
-  (x 0 :type integer)
-  (y 0 :type integer)
-  (cover 0 :type integer)
-  (area 0 :type integer))
+  (x 0 :type fixnum)
+  (y 0 :type fixnum)
+  (cover 0 :type fixnum)
+  (area 0 :type fixnum))
 
 (declaim (inline cell-empty-p))
 (defun cell-empty-p (cell)
@@ -273,9 +286,15 @@ are both zero."
 (defun compare-cells (a b)
   "Compare coordinates between 2 cells. Used to sort cells by Y,
 then by X."
-  (or (< (cell-y a) (cell-y b))
-      (and (= (cell-y a) (cell-y b))
-           (< (cell-x a) (cell-x b)))))
+  (declare (optimize speed (safety 0)))
+  (let ((ax (cell-x a))
+	(ay (cell-y a))
+	(bx (cell-x b))
+	(by (cell-y b)))
+    (declare (fixnum ax ay bx by))
+    (or (< ay by)
+	(and (= ay by)
+	     (< ax bx)))))
 
 (declaim (inline update-cell))
 (defun update-cell (cell fx1 fy1 fx2 fy2)
@@ -387,7 +406,7 @@ Returns the current cell."
   "Draw a line from (X1,Y1) to (X2,Y2). All coordinates are
 integers with subpixel accuracy (a pixel width is given by
 +CELL-WIDTH+.) The line must be part of a closed polygon."
-  (declare (integer x1 y1 x2 y2))
+  (declare (fixnum x1 y1 x2 y2))
   (map-grid-spans (lambda (x y fx1 fy1 fx2 fy2)
                          (update-cell (set-current-cell state x y)
                                       fx1 fy1 fx2 fy2))
@@ -405,9 +424,11 @@ not depend on +CELL-WIDTH+."
 
 (declaim (inline compute-alpha))
 (defun compute-alpha (cover area)
+  (declare (optimize speed (safety 0)))
   "Compute the alpha value given the accumulated cover and the
 actual area of a cell."
-  (truncate (- (* 2 +cell-width+ cover) area)
+  (declare (fixnum cover area))
+  (truncate (- (the fixnum (* 2 (the fixnum +cell-width+) cover)) area)
             +alpha-divisor+))
 
 (defun freeze-state (state)
@@ -460,7 +481,7 @@ with SCANLINE-SWEEP."
   "Get the Y position of SCANLINE."
   (cell-y (first scanline)))
 
-(defun scanline-sweep (scanline function function-span &key start end)
+(defun scanline-sweep (scanline function start end)
   "Call FUNCTION for each pixel on the polygon covered by
 SCANLINE. The pixels are scanned in increasing X. The sweep can
 be limited to a range by START (included) or/and END (excluded)."
@@ -468,61 +489,44 @@ be limited to a range by START (included) or/and END (excluded)."
   (let ((cover 0)
         (y (scanline-y scanline))
         (cells scanline)
-        (last-x nil))
-    (when start
-      ;; skip initial cells that are before START
-      (loop while (and cells (< (cell-x (car cells)) start))
-         do (incf cover (cell-cover (car cells)))
+        (last-x -1))
+    (declare (function function))
+    (declare (fixnum cover y))
+    (declare (fixnum start end last-x))
+    ;; skip initial cells that are before START
+    (loop while (and cells (< (the fixnum (cell-x (car cells))) start))
+       do (incf cover (the fixnum (cell-cover (car cells))))
          (setf last-x (cell-x (car cells))
-               cells (cdr cells))))
+               cells (cdr cells)))
     (when cells
       (dolist (cell cells)
         (let ((x (cell-x cell)))
-          (when (and last-x (> x (1+ last-x)))
+	  (declare (fixnum x))
+          (when (> x (1+ last-x))
             (let ((alpha (compute-alpha cover 0)))
               (unless (zerop alpha)
-                (let ((start-x (if start (max start (1+ last-x)) (1+ last-x)))
-                      (end-x (if end (min end x) x)))
-                  (if function-span
-                      (funcall function-span start-x end-x y alpha)
-                      (loop for ix from start-x below end-x
-                         do (funcall function ix y alpha)))))))
-          (when (and end (>= x end))
+                (let ((start-x (max start (1+ last-x)))
+				   
+                      (end-x (min end x)))
+		  (loop for ix from start-x below end-x
+                         do (funcall function ix y alpha))))))
+          (when (>= x end)
             (return))
-          (incf cover (cell-cover cell))
+          (incf cover (the fixnum (cell-cover cell)))
           (let ((alpha (compute-alpha cover (cell-area cell))))
             (unless (zerop alpha)
               (funcall function x y alpha)))
           (setf last-x x))))))
 
-(defun cells-sweep/rectangle (state x1 y1 x2 y2 function &optional function-span)
+(defun cells-sweep/rectangle (state x1 y1 x2 y2 function)
   "Call FUNCTION for each pixel on the polygon described by
 previous call to LINE or LINE-F. The pixels are scanned in
 increasing Y, then on increasing X. This is limited to the
 rectangle region specified with (X1,Y1)-(X2,Y2) (where X2 must be
 greater than X1 and Y2 must be greater than Y1, to describe a
-non-empty region.)
-
-For optimization purpose, the optional FUNCTION-SPAN, if
-provided, is called for a full span of identical alpha pixel. If
-not provided, a call is made to FUNCTION for each pixel in the
-span."
+non-empty region.)"
   (let ((scanlines (freeze-state state)))
     (dolist (scanline scanlines)
       (when (<= y1 (scanline-y scanline) (1- y2))
-        (scanline-sweep scanline function function-span :start x1 :end x2))))
-  (values))
-
-(defun cells-sweep (state function &optional function-span)
-  "Call FUNCTION for each pixel on the polygon described by
-previous call to LINE or LINE-F. The pixels are scanned in
-increasing Y, then on increasing X.
-
-For optimization purpose, the optional FUNCTION-SPAN, if
-provided, is called for a full span of identical alpha pixel. If
-not provided, a call is made to FUNCTION for each pixel in the
-span."
-  (let ((scanlines (freeze-state state)))
-    (dolist (scanline scanlines)
-      (scanline-sweep scanline function function-span)))
+        (scanline-sweep scanline function x1 x2))))
   (values))
