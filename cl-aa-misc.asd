@@ -11,7 +11,7 @@
 
 (defsystem #:cl-aa-misc
   :description "cl-aa-misc: some tools related to cl-aa"
-  :version "$VERSION$"
+  ;; :version "$VERSION$"
   :author "Frederic Jolliton <frederic@jolliton.com>"
   :licence "MIT"
   :components ((:file "aa-misc")))

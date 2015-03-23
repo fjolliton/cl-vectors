@@ -11,7 +11,7 @@
 
 (defsystem #:cl-vectors
   :description "cl-paths: vectorial paths manipulation"
-  :version "$VERSION$"
+  ;; :version "$VERSION$"
   :author "Frederic Jolliton <frederic@jolliton.com>"
   :licence "MIT"
   :depends-on ("cl-aa" "cl-paths")

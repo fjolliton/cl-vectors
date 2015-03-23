@@ -10,5 +10,5 @@ if [ -e "$TARGZ" ]; then
 fi
 mkdir -p "$TARGET" && rm -rf "$TARGET" && mkdir "$TARGET"
 cat MANIFEST|while read FN; do cp "$FN" "$TARGET/$FN"; done
-(cd "$TARGET"; sed -i 's/\$VERSION\$/'"$VERSION"'/' *.asd)
+(cd "$TARGET"; sed -ri 's/;+[ \t]*:[vV][eE][rR][sS][iI][oO][nN][ \t]*\"(\$VERSION)\$\"[ \t]*$/:version '\"$VERSION\"'/' *.asd)
 tar cvzfC "$TARGZ" "$TARGET/.." "$FULLNAME"
