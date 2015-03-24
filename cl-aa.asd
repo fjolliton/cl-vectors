@@ -11,7 +11,7 @@
 
 (defsystem #:cl-aa
   :description "cl-aa: polygon rasterizer"
-  :version "$VERSION$"
+  ;; :VERSION "$VERSION$"
   :author "Frederic Jolliton <frederic@jolliton.com>"
   :licence "MIT"
   :components ((:file "aa")

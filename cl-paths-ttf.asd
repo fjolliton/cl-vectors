@@ -11,7 +11,7 @@
 
 (defsystem #:cl-paths-ttf
   :description "cl-paths-ttf: vectorial paths manipulation"
-  :version "$VERSION$"
+  ;; :version "$VERSION$"
   :author "Frederic Jolliton <frederic@jolliton.com>"
   :licence "MIT"
   :depends-on ("cl-paths" "zpb-ttf")
