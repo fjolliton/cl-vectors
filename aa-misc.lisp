@@ -238,7 +238,7 @@ order."
 ;;; WARNING: Run external program.
 (defun show-image (image &optional (external-viewer *external-viewer*))
   "Display IMAGE using the specified external viewver."
-  (let ((temp-filename "/tmp/.cl-aa-tmp.pnm"))
+  (uiop:with-temporary-file (:pathname temp-filename :prefix "cl-aa-tmp" :type "pnm")
     (save-image temp-filename image :pnm)
-    (asdf:run-shell-command "~S ~S" external-viewer temp-filename)
-    (delete-file temp-filename)))
+    (uiop:run-program `(,external-viewer ,(uiop:native-namestring temp-filename))
+                      :output :interactive :error-output :interactive)))
