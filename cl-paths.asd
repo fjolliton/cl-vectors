@@ -4,12 +4,7 @@
 ;;;; Copyright (C) 2007-2013  Frédéric Jolliton <frederic@jolliton.com>
 ;;;; This code is licensed under the MIT license.
 
-(defpackage #:cl-paths-system
-  (:use #:cl #:asdf))
-
-(in-package #:cl-paths-system)
-
-(defsystem #:cl-paths
+(defsystem "cl-paths"
   :description "cl-paths: vectorial paths manipulation"
   ;; :version "$VERSION$"
   :author "Frederic Jolliton <frederic@jolliton.com>"
