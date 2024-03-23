@@ -2,7 +2,7 @@
 ;;;; Copyright (C) 2007-2013  Frédéric Jolliton <frederic@jolliton.com>
 ;;;; This code is licensed under the MIT license.
 
-;;;; See http://projects.tuxee.net/cl-vectors/
+;;;; See https://projects.tuxee.net/cl-vectors/
 
 ;;;; The name 'cl-aa-bin' is derived from 'cl-aa' which is the library
 ;;;; used to rasterize antialiased polygons. The '-bin' version

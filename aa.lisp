@@ -3,7 +3,7 @@
 ;;;; This code is licensed under the MIT license.
 
 ;;;; This file implement the AA algorithm from the AntiGrain project
-;;;; (http://antigrain.com/).
+;;;; (https://agg.sourceforge.net/antigrain.com/).
 ;;;;
 ;;;; Changelogs:
 ;;;;
@@ -46,7 +46,8 @@
 ;;;; About AntiGrain: "Anti-Grain Geometry (AGG) is an Open Source,
 ;;;; free of charge graphic library, written in industrially standard
 ;;;; C++." "A High Quality Rendering Engine for C++". Its main author
-;;;; is Maxim Shemanarev. Project home page is at http://antigrain.com/
+;;;; is Maxim Shemanarev. Project home page is at
+;;;; https://agg.sourceforge.net/antigrain.com/
 ;;;;
 ;;;; How to use it:
 ;;;;
@@ -97,28 +98,28 @@
 ;;;;
 ;;;; The latest version can be downloaded from:
 ;;;;
-;;;;     http://tuxee.net/cl-aa.lisp
-;;;;     http://tuxee.net/cl-aa-sample.lisp
+;;;;     https://tuxee.net/cl-aa.lisp
+;;;;     https://tuxee.net/cl-aa-sample.lisp
 ;;;;
 ;;;; See also:
 ;;;;
-;;;;     http://projects.tuxee.net/cl-aa-path/
+;;;;     https://projects.tuxee.net/cl-aa-path/
 ;;;;
 ;;;; See examples of output at:
 ;;;;
-;;;;     http://tuxee.net/cl-aa-1.png
-;;;;     http://tuxee.net/cl-aa-2.png (this one was a bug.)
-;;;;     http://tuxee.net/cl-aa-3.png
-;;;;     http://tuxee.net/cl-aa-4.png
-;;;;     http://tuxee.net/cl-aa-5.png (when testing transparency, but looks bad.)
-;;;;     http://tuxee.net/cl-aa-6.png
-;;;;     http://tuxee.net/cl-aa-7.png
-;;;;     http://tuxee.net/cl-aa-8.png
-;;;;     http://tuxee.net/cl-aa-stroke-0.png (using stroke functions not provided here.)
-;;;;     http://tuxee.net/cl-aa-stroke-1.png
-;;;;     http://tuxee.net/cl-aa-stroke-2.png
-;;;;     http://tuxee.net/cl-aa-skippy-1.gif (animated GIF, thanks to Skippy library)
-;;;;     http://tuxee.net/cl-aa-skippy-2.gif
+;;;;     https://tuxee.net/cl-aa-1.png
+;;;;     https://tuxee.net/cl-aa-2.png (this one was a bug.)
+;;;;     https://tuxee.net/cl-aa-3.png
+;;;;     https://tuxee.net/cl-aa-4.png
+;;;;     https://tuxee.net/cl-aa-5.png (when testing transparency, but looks bad.)
+;;;;     https://tuxee.net/cl-aa-6.png
+;;;;     https://tuxee.net/cl-aa-7.png
+;;;;     https://tuxee.net/cl-aa-8.png
+;;;;     https://tuxee.net/cl-aa-stroke-0.png (using stroke functions not provided here.)
+;;;;     https://tuxee.net/cl-aa-stroke-1.png
+;;;;     https://tuxee.net/cl-aa-stroke-2.png
+;;;;     https://tuxee.net/cl-aa-skippy-1.gif (animated GIF, thanks to Skippy library)
+;;;;     https://tuxee.net/cl-aa-skippy-2.gif
 ;;;;
 ;;;; The code is absolutely NOT optimized in any way. It was mainly to
 ;;;; figure how the algorithm was working. Also, I don't have tested
@@ -133,7 +134,7 @@
 ;;;; AntiGrain project (version 2.5 at this date.)
 ;;;;
 ;;;; For animated GIF, see Zach Beane's Skippy project at:
-;;;;     http://www.cliki.net/Skippy
+;;;;     https://www.cliki.net/Skippy
 
 ;;;; Naming convention:
 ;;;; foo-m for fixed-point mantissa,

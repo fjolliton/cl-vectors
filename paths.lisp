@@ -24,7 +24,7 @@ Bezier curves")
 
 ;;;--[ Math utilities ]------------------------------------------------------
 
-;;; http://mathworld.wolfram.com/Line-LineIntersection.html
+;;; https://mathworld.wolfram.com/Line-LineIntersection.html
 (defun line-intersection (x1 y1 x2 y2
                           x3 y3 x4 y4)
   "Compute the intersection between 2 lines (x1,y1)-(x2,y2)
@@ -819,7 +819,7 @@ radii (needed if scaling was necessary)."
           (aref points (- (length points) 2)) k2
           (aref points (- (length points) 1)) (slot-value interpolation 'queue))
     (labels ((eval-catmull-rom (a b c d p)
-               ;; http://www.mvps.org/directx/articles/catmull/
+               ;; https://www.mvps.org/directx/articles/catmull/
                (* 0.5
                   (+ (* 2 b)
                      (* (+ (- a) c) p)
@@ -906,7 +906,7 @@ radii (needed if scaling was necessary)."
 
 ;;; Bezier curves
 
-;;; [http://www.fho-emden.de/~hoffmann/bezier18122002.pdf]
+;;; [http://docs-hoffmann.de/bezier18122002.pdf]
 
 (defclass bezier ()
   ((control-points
